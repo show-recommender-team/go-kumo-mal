@@ -8,7 +8,7 @@ import (
 	"github.com/machinebox/graphql"
 )
 
-var getReviewsGQL string = `query ($page: Int = 1) {
+var getReviewsGQL string = `query ($page: Int!) {
     Page(page: $page, perPage: 50) {
       pageInfo {
         total
@@ -69,13 +69,12 @@ func GetReviews(gql *graphql.Client) (*golist.List, error) {
 	if err != nil {
 		return nil, err
 	}
-	hasNextpage := respData.HasNext
 	for _, v := range respData.Reviews {
 		listOfReviews.PushBack(v)
 	}
 	var respDataBuf AnilistReviewQueryResponse
 	var reqBuf *graphql.Request
-	for index := respData.CurrentPage + 1; hasNextpage; index++ {
+	for index := respData.CurrentPage + 1; index <= respData.Pages; index++ {
 		reqBuf = graphql.NewRequest(getReviewsGQL)
 		reqBuf.Var("page", index)
 		err = gql.Run(ctx, reqBuf, &respDataBuf)
