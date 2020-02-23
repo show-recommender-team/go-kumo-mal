@@ -1,0 +1,18 @@
+service Anime {
+  rpc GetReviews (GetReviewsRequest) returns (GetReviewsResponse) {}
+}
+
+message GetReviewsRequest {
+  required int32 limit = 1;
+}
+
+message GetReviewsResponse {
+  message Review {
+    required int32 score = 1;
+    //Anilist User Id
+    required int32 uid = 2;
+    //Anilist Media Id
+    required int32 mid = 3;
+  }
+  repeated Review results = 1;
+}
