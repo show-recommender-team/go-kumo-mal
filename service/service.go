@@ -14,17 +14,14 @@ import (
 type AnimeEngineService struct {
 	pb.UnimplementedAnimeServer
 	net.Listener
+	portSpec string
 	*grpc.Server
 	*bk.Bitcask
 }
 
 func New(portSpec string, caskClient *bk.Bitcask) (*AnimeEngineService, error) {
 	p := new(AnimeEngineService)
-	list, err := net.Listen("tcp", portSpec)
-	if err != nil {
-		return nil, err
-	}
-	p.Listener = list
+	p.portSpec = portSpec
 	p.Bitcask = caskClient
 	return p, nil
 }
@@ -35,7 +32,7 @@ func (g *AnimeEngineService) Start() {
 
 func (g *AnimeEngineService) Stop() {
 	if g.Server != nil {
-		g.Server.Stop()
+		g.Server.GracefulStop()
 	}
 	if g.Listener != nil {
 		g.Listener.Close()
@@ -63,6 +60,11 @@ func (g *AnimeEngineService) mustServeRPC() {
 func (g *AnimeEngineService) setupRPCServer() error {
 	g.Server = grpc.NewServer()
 	pb.RegisterAnimeServer(g.Server, g)
+	lis, err := net.Listen("tcp", g.portSpec)
+	g.Listener = lis
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
