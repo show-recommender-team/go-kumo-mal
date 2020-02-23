@@ -3,9 +3,9 @@ package scraper
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/robfig/cron"
 	"github.com/machinebox/graphql"
 	bk "github.com/prologic/bitcask"
 	pb "github.com/show-recommender-team/go-kumo-mal/v1beta1"
@@ -65,7 +65,6 @@ type AnilistReviewQueryResponse struct {
 type AnilistReviewProvider struct {
 	*graphql.Client
 	*bk.Bitcask
-	*cron
 }
 
 func New(gql *graphql.Client, cask *bk.Bitcask) *AnilistReviewProvider {
@@ -75,16 +74,13 @@ func New(gql *graphql.Client, cask *bk.Bitcask) *AnilistReviewProvider {
 	return r
 }
 
-func (a *AnilistReviewProvider) GetReviews() error {
+func (a *AnilistReviewProvider) GetReviews() {
 	//intial request to get pages
 	firstReq := graphql.NewRequest(getReviewsGQL)
 	firstReq.Var("page", 1)
 	var respDataBuf AnilistReviewQueryResponse
 	ctx := context.Background()
-	err := a.Run(ctx, firstReq, &respDataBuf)
-	if err != nil {
-		return err
-	}
+	a.Run(ctx, firstReq, &respDataBuf)
 	var protoReview *pb.GetReviewsResponse_Review
 	var ridBuf []byte
 	for _, v := range respDataBuf.Reviews {
@@ -92,10 +88,7 @@ func (a *AnilistReviewProvider) GetReviews() error {
 		protoReview.Uid = &v.UserID
 		protoReview.Mid = &v.MediaID
 		protoReview.Score = &v.Rating
-		md, err := proto.Marshal(protoReview)
-		if err != nil {
-			return err
-		}
+		md, _ := proto.Marshal(protoReview)
 		ridBuf = []byte(strconv.Itoa(v.ReviewID))
 		a.Put(ridBuf, md)
 	}
@@ -103,24 +96,31 @@ func (a *AnilistReviewProvider) GetReviews() error {
 	for index := respDataBuf.CurrentPage + 1; index <= respDataBuf.Pages; index++ {
 		reqBuf = graphql.NewRequest(getReviewsGQL)
 		reqBuf.Var("page", index)
-		err = a.Run(ctx, reqBuf, &respDataBuf)
-		if err != nil {
-			return err
-		}
+		a.Run(ctx, reqBuf, &respDataBuf)
 		for _, v := range respDataBuf.Reviews {
 			protoReview = new(pb.GetReviewsResponse_Review)
 			protoReview.Uid = &v.UserID
 			protoReview.Mid = &v.MediaID
 			protoReview.Score = &v.Rating
-			md, err := proto.Marshal(protoReview)
-			if err != nil {
-				return err
-			}
+			md, _ := proto.Marshal(protoReview)
 			ridBuf = []byte(strconv.Itoa(v.ReviewID))
 			a.Put(ridBuf, md)
 		}
 	}
-	return nil
 }
 
-func
+func (a *AnilistReviewProvider) DoCron(interval *time.Ticker) chan struct{} {
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-interval.C:
+				a.GetReviews()
+			case <-quit:
+				interval.Stop()
+				return
+			}
+		}
+	}()
+	return quit
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/machinebox/graphql"
 	bk "github.com/prologic/bitcask"
@@ -15,7 +16,9 @@ func main() {
 	cask, _ := bk.Open("./db")
 	defer cask.Close()
 	scr := scraper.New(client, cask)
-	scr.GetReviews()
+	ticker := time.NewTicker(65 * time.Second)
+	ch := scr.DoCron(ticker)
+	time.Sleep(75 * time.Second)
 	cask.Fold(func(key []byte) error {
 		d, _ := cask.Get(key)
 		review := new(pb.GetReviewsResponse_Review)
@@ -23,4 +26,5 @@ func main() {
 		fmt.Printf("%+v\n", review)
 		return nil
 	})
+	close(ch)
 }
