@@ -74,6 +74,16 @@ func New(gql *graphql.Client, cask *bk.Bitcask) *AnilistReviewProvider {
 	return r
 }
 
+func AnilistReviewToProtoReview(review *Review) ([]byte, []byte) {
+	protoReview := new(pb.GetReviewsResponse_Review)
+	protoReview.Uid = &review.UserID
+	protoReview.Mid = &review.MediaID
+	protoReview.Score = &review.Rating
+	md, _ := proto.Marshal(protoReview)
+	rid := []byte(strconv.Itoa(review.ReviewID))
+	return md, rid
+}
+
 func (a *AnilistReviewProvider) GetReviews() {
 	//intial request to get pages
 	firstReq := graphql.NewRequest(getReviewsGQL)
@@ -81,16 +91,11 @@ func (a *AnilistReviewProvider) GetReviews() {
 	var respDataBuf AnilistReviewQueryResponse
 	ctx := context.Background()
 	a.Run(ctx, firstReq, &respDataBuf)
-	var protoReview *pb.GetReviewsResponse_Review
 	var ridBuf []byte
+	var serializedPbReview []byte
 	for _, v := range respDataBuf.Reviews {
-		protoReview = new(pb.GetReviewsResponse_Review)
-		protoReview.Uid = &v.UserID
-		protoReview.Mid = &v.MediaID
-		protoReview.Score = &v.Rating
-		md, _ := proto.Marshal(protoReview)
-		ridBuf = []byte(strconv.Itoa(v.ReviewID))
-		a.Put(ridBuf, md)
+		serializedPbReview, ridBuf = AnilistReviewToProtoReview(&v)
+		a.Put(ridBuf, serializedPbReview)
 	}
 	var reqBuf *graphql.Request
 	for index := respDataBuf.CurrentPage + 1; index <= respDataBuf.Pages; index++ {
@@ -98,13 +103,8 @@ func (a *AnilistReviewProvider) GetReviews() {
 		reqBuf.Var("page", index)
 		a.Run(ctx, reqBuf, &respDataBuf)
 		for _, v := range respDataBuf.Reviews {
-			protoReview = new(pb.GetReviewsResponse_Review)
-			protoReview.Uid = &v.UserID
-			protoReview.Mid = &v.MediaID
-			protoReview.Score = &v.Rating
-			md, _ := proto.Marshal(protoReview)
-			ridBuf = []byte(strconv.Itoa(v.ReviewID))
-			a.Put(ridBuf, md)
+			serializedPbReview, ridBuf = AnilistReviewToProtoReview(&v)
+			a.Put(ridBuf, serializedPbReview)
 		}
 	}
 }

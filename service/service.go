@@ -9,6 +9,7 @@ import (
 	bk "github.com/prologic/bitcask"
 	pb "github.com/show-recommender-team/go-kumo-mal/v1beta1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type AnimeEngineService struct {
@@ -60,6 +61,7 @@ func (g *AnimeEngineService) mustServeRPC() {
 func (g *AnimeEngineService) setupRPCServer() error {
 	g.Server = grpc.NewServer()
 	pb.RegisterAnimeServer(g.Server, g)
+	reflection.Register(g.Server)
 	lis, err := net.Listen("tcp", g.portSpec)
 	g.Listener = lis
 	if err != nil {
