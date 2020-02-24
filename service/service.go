@@ -46,7 +46,7 @@ func (g *AnimeEngineService) mustServeRequests() {
 	if err != nil {
 		glog.Fatalf("failed to setup gRPC Server, %v", err)
 	}
-
+	glog.Infof("Serving gRPC")
 	go g.mustServeRPC()
 }
 
@@ -55,7 +55,6 @@ func (g *AnimeEngineService) mustServeRPC() {
 	if err != nil {
 		glog.Fatalf("failed to serve gRPC, %v", err)
 	}
-	glog.Infof("Serving gRPC")
 }
 
 func (g *AnimeEngineService) setupRPCServer() error {

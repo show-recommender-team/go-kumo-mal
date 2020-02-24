@@ -11,7 +11,7 @@ import (
 	pb "github.com/show-recommender-team/go-kumo-mal/v1beta1"
 )
 
-var getReviewsGQL string = `query ($page: Int!) {
+var getReviewsGQL = `query ($page: Int!) {
     Page(page: $page, perPage: 50) {
       pageInfo {
         total
