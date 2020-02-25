@@ -1,3 +1,4 @@
+syntax="proto2";
 service Anime {
   rpc GetReviews (GetReviewsRequest) returns (GetReviewsResponse) {}
 }
