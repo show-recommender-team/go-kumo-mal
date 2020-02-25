@@ -1,0 +1,21 @@
+package: github.com/show-recommender-team/go-kumo-mal
+import:
+- package: github.com/fullstorydev/grpcui
+  version: ^0.2.1
+  subpackages:
+  - standalone
+- package: github.com/golang/glog
+- package: github.com/golang/protobuf
+  version: ^1.4.0-rc.1
+  subpackages:
+  - proto
+- package: github.com/machinebox/graphql
+  version: ^0.2.2
+- package: github.com/prologic/bitcask
+  version: ^0.3.5
+- package: google.golang.org/grpc
+  version: ^1.28.0-pre
+  subpackages:
+  - codes
+  - reflection
+  - status
