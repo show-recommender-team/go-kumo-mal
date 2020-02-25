@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math/rand"
 	"net"
 
 	"github.com/golang/glog"
@@ -84,6 +85,12 @@ func (g *AnimeEngineService) GetReviews(ctx context.Context, request *pb.GetRevi
 		rSlice = append(rSlice, review)
 		return nil
 	})
+	if *request.Limit > 0 && int(*request.Limit) < len(rSlice) {
+		rStart := rand.Intn(len(rSlice) - int((*request.Limit + 1)))
+		rEnd := rStart + int(*request.Limit)
+		subSlice := rSlice[rStart:rEnd]
+		rSlice = subSlice
+	}
 	resp.Results = rSlice
 	return resp, nil
 }
