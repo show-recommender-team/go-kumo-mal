@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+go-kumo-mal*
 
 # Test binary, built with `go test -c`
 *.test
